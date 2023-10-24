@@ -2,6 +2,10 @@
 
 A Python Terminal script for displaying Corporate filings on BSE exchange.
 
+- Corporate Announcements
+- Result Calendar
+- Corporate Actions like Dividend, Bonus, Splits etc.
+
 Use it track company updates, quarterly results, dividend, bonus etc on your portfolio stocks.
 
 ![news.py screenshot](https://res.cloudinary.com/doyu4uovr/image/upload/s--RpyXwBKg--/c_scale,f_auto,w_800/v1698149118/stock-news/news_t3l3o8.png)
