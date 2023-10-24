@@ -53,17 +53,14 @@ class ColorFormatter(BaseFormatter):
         baseurl = 'https://www.bseindia.com/xml-data/corpfiling/AttachLive'
         return f"\n{self.CYAN}{baseurl}/{filename}{self.ENDC}"
 
-    def string(self, dct: dict, dt: datetime) -> str:
-        string = ''
-        purpose = dct['Purpose']
+    def string(self, key: str, val: str, date: datetime | None = None) -> str:
+        string = f"{self.HEADER}{self.BOLD}{key}:".ljust(25)
+        string += f"{self.GREEN}{val}{self.ENDC}".ljust(48)
 
-        if 'Dividend' in purpose:
-            purpose = cleanDividendAction(purpose)
+        if date:
+            string += dt.strftime('%d %b %Y')
 
-        string += f"{self.HEADER}{self.BOLD}{dct['short_name']}:".ljust(25)
-        string += f"{self.GREEN}{purpose}{self.ENDC}".ljust(48)
-        string += f'{dt:%d %b %Y}\n'
-        return string
+        return string + '\n'
 
 
 class TextFormatter(BaseFormatter):
@@ -78,17 +75,14 @@ class TextFormatter(BaseFormatter):
         baseurl = 'https://www.bseindia.com/xml-data/corpfiling/AttachLive'
         return f"\n{baseurl}/{filename}"
 
-    def string(self, dct: dict, dt: datetime) -> str:
-        string = ''
-        purpose = dct['Purpose']
+    def string(self, key: str, val: str, date: datetime | None = None) -> str:
+        string = f"{key}:".ljust(15)
+        string += f"{val}".ljust(40)
 
-        if 'Dividend' in purpose:
-            purpose = cleanDividendAction(purpose)
+        if date:
+            string += dt.strftime('%d %b %Y')
 
-        string += f"{dct['short_name']}:".ljust(15)
-        string += f"{purpose}".ljust(40)
-        string += f'{dt:%d %b %Y}\n'
-        return string
+        return string + '\n'
 
 
 def isBlackListed(string: str) -> bool:
@@ -179,7 +173,6 @@ parser.add_argument('-f', '--file',
 
 args = parser.parse_args()
 
-# DATE
 dt = datetime.now()
 
 if args.date:
@@ -211,6 +204,7 @@ else:
 
     watchlist = json.loads(WATCH_FILE.read_bytes())
 
+
 with BSE() as bse:
     if symList:
         for sym in symList:
@@ -220,15 +214,26 @@ with BSE() as bse:
         WATCH_FILE.write_text(json.dumps(watchlist, indent=3))
 
     actions = bse.actions()
+
+    result_calendar = bse.resultCalendar()
+
     announcements = []
 
     for code, sym in watchlist.items():
         res = bse.announcements(from_date=dt, to_date=dt, scripcode=code)
         announcements.extend(res['Table'])
 
+
 fmt = TextFormatter() if args.txt else ColorFormatter()
 
-ann_txt = portfolio_acts = other_acts = ''
+ann_txt = result_txt = portfolio_acts = other_acts = ''
+
+
+# PROCESS RESULT CALENDAR
+for res in result_calendar:
+    if res['scrip_Code'] in watchlist:
+        result_txt += fmt.string(res['short_name'], res['meeting_date'])
+
 
 # PROCESS CORP ANNOUNCEMENTS
 for ann in announcements:
@@ -263,11 +268,16 @@ for ann in announcements:
 # PROCESS CORP. ACTIONS
 for act in actions:
     purpose = act['Purpose'].lower()
+    sym = act['short_name']
+
+    if 'Dividend' in purpose:
+        purpose = cleanDividendAction(purpose)
 
     if act['scrip_code'] in watchlist:
-        portfolio_acts += fmt.string(act, dt)
+        portfolio_acts += fmt.string(sym, purpose, dt)
     elif 'bonus' in purpose or 'split' in purpose:
-        other_acts += fmt.string(act, dt)
+        other_acts += fmt.string(sym, purpose, dt)
+
 
 # PRINT ANNOUNCEMENTS
 print(fmt.mainHeading(f'CORP. ANNOUNCEMENTS - {dt:%A %d %b %Y}'))
@@ -276,6 +286,13 @@ if ann_txt:
     print(ann_txt)
 else:
     print('\tNo announcements to display.\n')
+
+
+# PRINT RESULT CALENDAR
+if result_txt:
+    print(fmt.mainHeading('Result Calendar'))
+    print(result_txt)
+
 
 # PRINT ACTIONS
 print(fmt.mainHeading('Corporate Actions'))
