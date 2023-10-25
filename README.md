@@ -10,7 +10,7 @@ Use it track company updates, quarterly results, dividend, bonus etc on your por
 
 ![news.py screenshot](https://res.cloudinary.com/doyu4uovr/image/upload/s--RpyXwBKg--/c_scale,f_auto,w_800/v1698149118/stock-news/news_t3l3o8.png)
 
-Python version: >= 3.6
+Python version: >= 3.10
 
 If you ❤️ my work so far, please 🌟 this repo.
 

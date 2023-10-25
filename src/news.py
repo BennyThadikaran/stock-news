@@ -64,6 +64,7 @@ class ColorFormatter(BaseFormatter):
 
 
 class TextFormatter(BaseFormatter):
+    '''Format strings in plain text'''
 
     def heading(self, sym: str, category: str) -> str:
         return f"{sym.upper()} - {category}\n"
@@ -111,20 +112,20 @@ def cleanDividendAction(string: str) -> str:
     'Interim Dividend - Rs. - 18.0000' => 'Interim Dividend Rs.18.0'
     '''
 
-    if not 'Dividend' in string:
-        return string
-
-    out = [i.strip() for i in string.split('-')]
+    # 'Interim Dividend - Rs. - 18.0000' -> split on '-' and strip space chars
+    # ['Interim Dividend', 'Rs.'], 18.0000
+    *str_lst, dividend = tuple(i.strip() for i in string.split('-'))
 
     try:
-        dividend = float(out[-1])
+        dividend = float(dividend)
     except ValueError:
-        return ' '.join(out)
+        # Not a valid number. return string as is
+        return string
 
-    return f"{' '.join(out[:-1])}{dividend}"
+    return f"{' '.join(str_lst)}{dividend}"
 
 
-def parseComplaints(string):
+def parseComplaints(string) -> str:
     '''Parses shareholder complaints string.
     Looks for integer values between HTML tags'''
 
@@ -187,10 +188,10 @@ if args.prev:
 DIR = Path(__file__).parent
 WATCH_FILE = DIR / 'watchlist.json'
 
-symList = None
+symList: list[str] | None = None
 
 if args.file:
-    watchlist = {}
+    watchlist: dict[str, str] = {}
 
     if not args.file.exists():
         raise FileNotFoundError(
@@ -208,19 +209,20 @@ else:
 with BSE() as bse:
     if symList:
         for sym in symList:
-            code = bse.getScripCode(sym)
+            code: str = bse.getScripCode(sym)
             watchlist[code] = sym
 
         WATCH_FILE.write_text(json.dumps(watchlist, indent=3))
+        print("'watchlist.json' file saved")
 
-    actions = bse.actions()
+    actions: list[dict] = bse.actions()
 
-    result_calendar = bse.resultCalendar()
+    result_calendar: list[dict] = bse.resultCalendar()
 
-    announcements = []
+    announcements: list[dict] = []
 
-    for code, sym in watchlist.items():
-        res = bse.announcements(from_date=dt, to_date=dt, scripcode=code)
+    for code in watchlist:
+        res: dict = bse.announcements(from_date=dt, to_date=dt, scripcode=code)
         announcements.extend(res['Table'])
 
 
@@ -239,7 +241,7 @@ for res in result_calendar:
 for ann in announcements:
     code = str(ann['SCRIP_CD'])
     sym = watchlist[code]
-    subject = ann['NEWSSUB']
+    subject: str = ann['NEWSSUB']
 
     if not (code in watchlist and ann['CATEGORYNAME']):
         continue
@@ -248,12 +250,13 @@ for ann in announcements:
         continue
 
     if '-' in subject:
-        subject = subject.split('-')[-1][:70].strip()
+        # Strip company name, scrip code etc. and limit subject to 70 chars
+        subject: str = subject.split('-')[-1][:70].strip()
 
     if 'investor complaints' in subject.lower():
         headline = parseComplaints(ann['HEADLINE'])
     else:
-        headline = ann['HEADLINE'].replace('<BR>', '')
+        headline: str = ann['HEADLINE'].replace('<BR>', '')
 
     ann_txt += fmt.heading(sym, ann['CATEGORYNAME'])
 
@@ -267,16 +270,17 @@ for ann in announcements:
 
 # PROCESS CORP. ACTIONS
 for act in actions:
-    purpose = act['Purpose'].lower()
-    sym = act['short_name']
+    purpose_lc: str = act['Purpose'].lower()
+    sym: str = act['short_name']
+    code = str(act['scrip_code'])
 
-    if 'Dividend' in purpose:
-        purpose = cleanDividendAction(purpose)
+    if 'dividend' in purpose_lc:
+        act['Purpose'] = cleanDividendAction(act['Purpose'])
 
-    if act['scrip_code'] in watchlist:
-        portfolio_acts += fmt.string(sym, purpose, dt)
-    elif 'bonus' in purpose or 'split' in purpose:
-        other_acts += fmt.string(sym, purpose, dt)
+    if code in watchlist:
+        portfolio_acts += fmt.string(sym, act['Purpose'], dt)
+    elif 'bonus' in purpose_lc or 'split' in purpose_lc:
+        other_acts += fmt.string(sym, act['Purpose'], dt)
 
 
 # PRINT ANNOUNCEMENTS
@@ -301,7 +305,7 @@ if portfolio_acts:
     print(fmt.subHeading('Portfolio'))
     print(portfolio_acts)
 else:
-    print(f'\tNo actions on Portfolio\n')
+    print('\tNo actions on Portfolio\n')
 
 if other_acts:
     print(fmt.subHeading('Other Corp. Actions'))
