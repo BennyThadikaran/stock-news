@@ -8,7 +8,7 @@ A Python Terminal script for displaying Corporate filings on BSE exchange.
 
 Use it track company updates, quarterly results, dividend, bonus etc on your portfolio stocks.
 
-![news.py screenshot](https://res.cloudinary.com/doyu4uovr/image/upload/s--RpyXwBKg--/c_scale,f_auto,w_800/v1698149118/stock-news/news_t3l3o8.png)
+![news.py screenshot](https://res.cloudinary.com/doyu4uovr/image/upload/s--m5SBWD_8--/c_scale,f_auto,w_800/v1698247749/stock-news/news-bse_fisxgv.png)
 
 Python version: >= 3.10
 
