@@ -204,7 +204,7 @@ else:
 
     watchlist = json.loads(WATCH_FILE.read_bytes())
 
-with BSE() as bse:
+with BSE(DIR) as bse:
     if symList:
         for sym in symList:
             code: str = bse.getScripCode(sym)
