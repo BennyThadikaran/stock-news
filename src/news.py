@@ -5,7 +5,7 @@ from sys import platform
 from pathlib import Path
 from argparse import ArgumentParser
 import json
-from re import findall
+import re
 
 
 class BaseFormatter:
@@ -92,12 +92,8 @@ def isBlackListed(string: str) -> bool:
     string = string.lower()
 
     # Picked from announcements subcategory
-    filtered_words = (
-        'trading window',
-        'reg. 74 (5)',
-        'reg. 39 (3)'
-        'book closure'
-    )
+    filtered_words = ('trading window', 'reg. 74 (5)', 'reg. 39 (3)'
+                      'book closure')
 
     for key in filtered_words:
         if key in string:
@@ -129,7 +125,7 @@ def parseComplaints(string) -> str:
     '''Parses shareholder complaints string.
     Looks for integer values between HTML tags'''
 
-    m = findall(r'>(\d+)<', string)
+    m = re.findall(r'>(\d+)<', string)
 
     if len(m) < 4:
         return string
@@ -142,8 +138,9 @@ if 'win' in platform:
     # enable color support in Windows
     system('color')
 
-parser = ArgumentParser(prog='news.py',
-                        description='A script for displaying Corporate filings on BSE exchange.')
+parser = ArgumentParser(
+    prog='news.py',
+    description='A script for displaying Corporate filings on BSE exchange.')
 
 group = parser.add_mutually_exclusive_group(required=False)
 
@@ -157,18 +154,21 @@ group.add_argument('-p',
                    metavar='N',
                    help='Get news for previous day or N days back.')
 
-group.add_argument('-d', '--date',
+group.add_argument('-d',
+                   '--date',
                    type=lambda x: datetime.strptime(x, '%Y-%m-%d'),
                    action='store',
                    metavar='YYYY-MM-DD',
                    help='Get news for specified date')
 
-parser.add_argument('-t', '--txt',
+parser.add_argument('-t',
+                    '--txt',
                     action='store_true',
                     default=False,
                     help='Output plain text')
 
-parser.add_argument('-f', '--file',
+parser.add_argument('-f',
+                    '--file',
                     type=Path,
                     help='Add watchlist symbols file')
 
@@ -194,8 +194,7 @@ if args.file:
     watchlist: dict[str, str] = {}
 
     if not args.file.exists():
-        raise FileNotFoundError(
-            f'{args.file} not found. ')
+        raise FileNotFoundError(f'{args.file} not found. ')
 
     symList = args.file.read_text().strip().split('\n')
 else:
@@ -204,7 +203,6 @@ else:
             '{WATCH_FILE} not found. Use -f to generate watchlist.json')
 
     watchlist = json.loads(WATCH_FILE.read_bytes())
-
 
 with BSE() as bse:
     if symList:
@@ -215,27 +213,32 @@ with BSE() as bse:
         WATCH_FILE.write_text(json.dumps(watchlist, indent=3))
         print("'watchlist.json' file saved")
 
-    actions: list[dict] = bse.actions()
-
-    result_calendar: list[dict] = bse.resultCalendar()
+    try:
+        actions: list[dict] = bse.actions()
+        result_calendar: list[dict] = bse.resultCalendar()
+    except (TimeoutError, ConnectionError) as e:
+        exit(repr(e))
 
     announcements: list[dict] = []
 
     for code in watchlist:
-        res: dict = bse.announcements(from_date=dt, to_date=dt, scripcode=code)
-        announcements.extend(res['Table'])
+        try:
+            res: dict = bse.announcements(from_date=dt,
+                                          to_date=dt,
+                                          scripcode=code)
+        except (TimeoutError, ConnectionError) as e:
+            exit(repr(e))
 
+        announcements.extend(res['Table'])
 
 fmt = TextFormatter() if args.txt else ColorFormatter()
 
 ann_txt = result_txt = portfolio_acts = other_acts = ''
 
-
 # PROCESS RESULT CALENDAR
 for res in result_calendar:
     if res['scrip_Code'] in watchlist:
         result_txt += fmt.string(res['short_name'], res['meeting_date'])
-
 
 # PROCESS CORP ANNOUNCEMENTS
 for ann in announcements:
@@ -249,9 +252,13 @@ for ann in announcements:
     if isBlackListed(ann['SUBCATNAME']):
         continue
 
-    if '-' in subject:
+    if ('Regulation' in subject or 'Notice' in subject
+            or 'Change' in subject) and '-' in subject:
         # Strip company name, scrip code etc. and limit subject to 70 chars
-        subject: str = subject.split('-')[-1][:70].strip()
+        subject = subject[subject.find('-') + 1:][:70]
+
+    if 'XBRL' in subject:
+        subject = subject.replace('- XBRL', '')
 
     if 'investor complaints' in subject.lower():
         headline = parseComplaints(ann['HEADLINE'])
@@ -260,13 +267,12 @@ for ann in announcements:
 
     ann_txt += fmt.heading(sym, ann['CATEGORYNAME'])
 
-    ann_txt += fmt.subject(subject, headline)
+    ann_txt += fmt.subject(subject.strip(), headline)
 
     if ann['ATTACHMENTNAME']:
         ann_txt += fmt.url(ann['ATTACHMENTNAME'])
 
     ann_txt += fmt.hr()
-
 
 # PROCESS CORP. ACTIONS
 for act in actions:
@@ -282,7 +288,6 @@ for act in actions:
     elif 'bonus' in purpose_lc or 'split' in purpose_lc:
         other_acts += fmt.string(sym, act['Purpose'], dt)
 
-
 # PRINT ANNOUNCEMENTS
 print(fmt.mainHeading(f'CORP. ANNOUNCEMENTS - {dt:%A %d %b %Y}'))
 
@@ -291,12 +296,10 @@ if ann_txt:
 else:
     print('\tNo announcements to display.\n')
 
-
 # PRINT RESULT CALENDAR
 if result_txt:
     print(fmt.mainHeading('Result Calendar'))
     print(result_txt)
-
 
 # PRINT ACTIONS
 print(fmt.mainHeading('Corporate Actions'))
