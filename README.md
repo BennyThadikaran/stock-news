@@ -10,7 +10,7 @@ Use it track company updates, quarterly results, dividend, bonus etc on your por
 
 ![news.py screenshot](https://res.cloudinary.com/doyu4uovr/image/upload/s--m5SBWD_8--/c_scale,f_auto,w_800/v1698247749/stock-news/news-bse_fisxgv.png)
 
-Python version: >= 3.10
+Python version: >= 3.8
 
 If you ❤️ my work so far, please 🌟 this repo.
 
@@ -64,6 +64,10 @@ All output is displayed in terminal colors. To display no color and plain text, 
 To **display help**, use `-h` or `--help`
 
 `py news.py -h`
+
+To output in other formats, use `--fmt` with `txt` for plain or `md` for markdown format
+
+To output to a file, use `-o` specifing the file path
 
 ## Notes
 
