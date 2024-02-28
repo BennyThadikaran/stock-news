@@ -170,8 +170,13 @@ def isBlackListed(string: str) -> bool:
     # Picked from announcements subcategory
     filtered_words = (
         "trading window",
-        "reg. 74 (5)",
-        "reg. 39 (3)" "book closure",
+        "reg. 74 (5)",  # demat
+        "book closure",
+        "investor meet",
+        "loss of share",
+        "loss of certificate",
+        "investor conference",
+        "shares in physical",
     )
 
     for key in filtered_words:
