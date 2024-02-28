@@ -140,7 +140,11 @@ class MarkdownFormatter(BaseFormatter):
         string += f"|{key}|{val}|"
 
         if date:
-            dt = date.strftime("%d %b %Y") if isinstance(date, datetime) else date
+            dt = (
+                date.strftime("%d %b %Y")
+                if isinstance(date, datetime)
+                else date
+            )
             string += f"{dt}|"
 
         return string + "\n"
@@ -164,7 +168,11 @@ def isBlackListed(string: str) -> bool:
     string = string.lower()
 
     # Picked from announcements subcategory
-    filtered_words = ("trading window", "reg. 74 (5)", "reg. 39 (3)" "book closure")
+    filtered_words = (
+        "trading window",
+        "reg. 74 (5)",
+        "reg. 39 (3)" "book closure",
+    )
 
     for key in filtered_words:
         if key in string:
@@ -246,7 +254,9 @@ parser.add_argument(
     help="Output format (choose from txt, md, html, color)",
 )
 
-parser.add_argument("-f", "--file", type=Path, help="Add watchlist symbols file")
+parser.add_argument(
+    "-f", "--file", type=Path, help="Add watchlist symbols file"
+)
 
 parser.add_argument(
     "-o",
@@ -321,7 +331,9 @@ with BSE(DIR) as bse:
 
     for code in watchlist:
         try:
-            res: dict = bse.announcements(from_date=dt, to_date=dt, scripcode=code)
+            res: dict = bse.announcements(
+                from_date=dt, to_date=dt, scripcode=code
+            )
         except (TimeoutError, ConnectionError) as e:
             exit(repr(e))
 
