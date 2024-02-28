@@ -357,7 +357,7 @@ for ann in announcements:
     if not (code in watchlist and ann["CATEGORYNAME"]):
         continue
 
-    if isBlackListed(ann["SUBCATNAME"]):
+    if isBlackListed(subject):
         continue
 
     if (
