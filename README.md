@@ -71,6 +71,15 @@ To output to a file, use `-o` specifing the file path
 
 ## Notes
 
-The announcements are filtered for certain keywords in the sub-category. These include `Loss of share certificates`, `book closure`, `Certificate of dematerialization`.
+The announcements are filtered for certain keywords in the subject.
+
+- trading window,
+- reg. 74 (5)
+- book closure
+- investor meet
+- loss of share
+- loss of certificate
+- investor conference
+- shares in physical
 
 IMHO these are unimportant and thus filtered out. If you wish to add or remove from this list, see `def isBlackListed` in `src/news.py`. The keywords in question are listed in `filtered_words`
