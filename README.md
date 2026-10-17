@@ -18,7 +18,7 @@ If you ❤️ my work so far, please 🌟 this repo.
 
 1. Clone this repo
 
-2. Install dependencies: `pip install bse`
+2. Install dependencies: `pip install -U bse`
 
 ### Initial Setup
 
